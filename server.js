@@ -11,25 +11,26 @@ const app = express();
 const server = createServer(app);
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Increased timeout settings
-server.timeout = 10800000; // 3 hours in milliseconds (10800000 ms = 3 hours)
+// Optional: Increase HTTP timeout (for initial handshake or long-lived HTTP)
+server.timeout = 0; // 0 = no timeout for HTTP requests
+server.keepAliveTimeout = 0;
+server.headersTimeout = 0;
 
-const wss = new WebSocketServer({ 
-  server,
-  // WebSocket-specific timeout settings
-  perMessageDeflate: false,
-  clientTracking: true
-});
+const wss = new WebSocketServer({ server });
 
-// Set keepalive interval for WebSocket connections
+// Store channels and user sockets
+const channels = new Map(); // channel -> Set of ws clients
+const userSockets = new Map(); // userId -> ws client
+
+// 💓 Heartbeat system to keep connections alive
+function heartbeat() {
+  this.isAlive = true;
+}
+
 wss.on('connection', function connection(ws) {
-  // Set WebSocket keepalive
   ws.isAlive = true;
-  
-  ws.on('pong', () => {
-    ws.isAlive = true;
-  });
-  
+  ws.on('pong', heartbeat); // Respond to ping from server
+
   ws.subscribedChannels = new Set();
   ws.userId = null;
 
@@ -61,20 +62,20 @@ wss.on('connection', function connection(ws) {
 
       case 'message':
         if (targetUsers && Array.isArray(targetUsers)) {
-            targetUsers.forEach(uid => {
+          targetUsers.forEach(uid => {
             const userSocket = userSockets.get(uid);
             if (userSocket && userSocket.readyState === WebSocket.OPEN) {
-                userSocket.send(JSON.stringify({ private: true, from: ws.userId ?? 'system', message }));
+              userSocket.send(JSON.stringify({ private: true, from: ws.userId ?? 'system', message }));
             }
-            });
+          });
         } else if (channel && channels.has(channel)) {
-            channels.get(channel).forEach(client => {
+          channels.get(channel).forEach(client => {
             if (client.readyState === WebSocket.OPEN) {
-                client.send(JSON.stringify({ channel, message }));
+              client.send(JSON.stringify({ channel, message }));
             }
-            });
+          });
         } else {
-            console.log('⚠️ No target users or channels found for message:', message);
+          console.log('⚠️ No target users or channels found for message:', message);
         }
         break;
 
@@ -95,16 +96,16 @@ wss.on('connection', function connection(ws) {
   });
 });
 
-// WebSocket keepalive interval (check every 30 seconds)
+// 🔄 Ping all clients every 30 seconds to keep connections alive
 const interval = setInterval(() => {
-  wss.clients.forEach((ws) => {
+  wss.clients.forEach(ws => {
     if (ws.isAlive === false) {
       console.log(`💀 Terminating dead connection for user ${ws.userId}`);
       return ws.terminate();
     }
-    
+
     ws.isAlive = false;
-    ws.ping();
+    ws.ping(); // Send ping, expect pong
   });
 }, 30000);
 
@@ -112,9 +113,6 @@ wss.on('close', () => {
   clearInterval(interval);
 });
 
-server.listen(6001, () => {
-  console.log('✅ WebSocket Server running at ws://localhost:6001');
-  console.log('⏰ Timeout settings:');
-  console.log('   - HTTP Server timeout: 10800000ms (3 hours)');
-  console.log('   - WebSocket keepalive: 30000ms (30 seconds)');
+server.listen(8080, () => {
+  console.log('✅ WebSocket Server running at ws://localhost:8080');
 });
