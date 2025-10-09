@@ -11,15 +11,25 @@ const app = express();
 const server = createServer(app);
 app.use(express.static(path.join(__dirname, 'public')));
 
-server.timeout = 10800000;
+// Increased timeout settings
+server.timeout = 10800000; // 3 hours in milliseconds (10800000 ms = 3 hours)
 
-const wss = new WebSocketServer({ server });
+const wss = new WebSocketServer({ 
+  server,
+  // WebSocket-specific timeout settings
+  perMessageDeflate: false,
+  clientTracking: true
+});
 
-// Store channels and user sockets
-const channels = new Map(); // channel -> Set of ws clients
-const userSockets = new Map(); // userId -> ws client
-
+// Set keepalive interval for WebSocket connections
 wss.on('connection', function connection(ws) {
+  // Set WebSocket keepalive
+  ws.isAlive = true;
+  
+  ws.on('pong', () => {
+    ws.isAlive = true;
+  });
+  
   ws.subscribedChannels = new Set();
   ws.userId = null;
 
@@ -85,6 +95,26 @@ wss.on('connection', function connection(ws) {
   });
 });
 
-server.listen(8080, () => {
-  console.log('✅ WebSocket Server running at ws://localhost:8080');
+// WebSocket keepalive interval (check every 30 seconds)
+const interval = setInterval(() => {
+  wss.clients.forEach((ws) => {
+    if (ws.isAlive === false) {
+      console.log(`💀 Terminating dead connection for user ${ws.userId}`);
+      return ws.terminate();
+    }
+    
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, 30000);
+
+wss.on('close', () => {
+  clearInterval(interval);
+});
+
+server.listen(6001, () => {
+  console.log('✅ WebSocket Server running at ws://localhost:6001');
+  console.log('⏰ Timeout settings:');
+  console.log('   - HTTP Server timeout: 10800000ms (3 hours)');
+  console.log('   - WebSocket keepalive: 30000ms (30 seconds)');
 });
