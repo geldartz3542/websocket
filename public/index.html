@@ -1,75 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>WebSocket Client</title>
-    <style>
-        body { font-family: Arial, sans-serif; }
-        #messages { border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 10px; }
-        #inputArea { display: flex; margin-top: 10px; }
-        #inputArea input { margin-right: 5px; }
-    </style>
+  <meta charset="UTF-8">
+  <title>WebSocket Client</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>WebSocket Client</h1>
-    <div>
-        <label for="channelInput">Channel:</label>
-        <input type="text" id="channelInput">
-        <button onclick="subscribe()">Subscribe</button>
-        <button onclick="unsubscribe()">Unsubscribe</button>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+  <div class="bg-white shadow-xl rounded-xl w-full max-w-4xl p-6">
+    <div class="flex items-center justify-between mb-4">
+        <div class="flex">
+            <img src="https://digisaka.app/images/digisaka_new.jpg" class="w-8 h-8"> 
+            <h1 class="text-2xl font-bold text-green-700"> Digisaka WebSocket Client</h1>
+        </div>
+      
+      <div id="status" class="flex items-center space-x-2">
+        <span id="statusDot" class="w-3 h-3 bg-red-500 rounded-full"></span>
+        <span id="statusText" class="text-sm text-gray-600">Disconnected</span>
+      </div>
     </div>
-    <div id="messages"></div>
-    <div id="inputArea">
-        <input type="text" id="messageInput" placeholder="Type a message">
-        <button onclick="sendMessage()">Send</button>
+
+    <!-- Channel subscription -->
+    <div class="flex items-center space-x-2 mb-4">
+      <input type="text" id="channelInput" placeholder="Enter channel name"
+        class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
+      <button onclick="subscribe()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+        Subscribe
+      </button>
+      <button onclick="unsubscribe()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition">
+        Unsubscribe
+      </button>
     </div>
 
-    <script>
-        const ws = new WebSocket('ws://localhost:8080');
+    <!-- Messages box -->
+    <div id="messages" class="border border-gray-300 rounded-lg h-80 overflow-y-auto p-3 bg-gray-50 mb-4"></div>
 
-        ws.onopen = () => {
-            addMessage('Connected to WebSocket server');
-        };
+    <!-- Send message -->
+    <div class="flex items-center space-x-2">
+      <input type="text" id="messageInput" placeholder="Type a message"
+        class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        onkeypress="if(event.key === 'Enter') sendMessage()">
+      <button onclick="sendMessage()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+        Send
+      </button>
+    </div>
+  </div>
 
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            addMessage(`Message from ${data.channel}: ${data.message}`);
-        };
+  <script>
+    const ws = new WebSocket('ws://localhost:8080');
 
-        ws.onclose = () => {
-            addMessage('Disconnected from WebSocket server');
-        };
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const messagesDiv = document.getElementById('messages');
 
-        ws.onerror = (error) => {
-            addMessage(`WebSocket error: ${error.message}`);
-        };
+    ws.onopen = () => setStatus(true);
+    ws.onclose = () => setStatus(false);
+    ws.onerror = (err) => addMessage(`⚠️ WebSocket error: ${err.message}`, "error");
 
-        function addMessage(message) {
-            const messagesDiv = document.getElementById('messages');
-            const messageElement = document.createElement('div');
-            messageElement.textContent = message;
-            messagesDiv.appendChild(messageElement);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
+    ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    
+    let messageDisplay;
 
-        function subscribe() {
-            const channel = document.getElementById('channelInput').value;
-            ws.send(JSON.stringify({ action: 'subscribe', channel }));
-            addMessage(`Subscribed to channel: ${channel}`);
-        }
+    if (typeof data.message === 'object') {
+        messageDisplay = `<pre class="bg-gray-100 text-gray-800 p-2 rounded-md text-xs overflow-x-auto">${JSON.stringify(data.message, null, 2)}</pre>`;
+    } else {
+        messageDisplay = data.message;
+    }
 
-        function unsubscribe() {
-            const channel = document.getElementById('channelInput').value;
-            ws.send(JSON.stringify({ action: 'unsubscribe', channel }));
-            addMessage(`Unsubscribed from channel: ${channel}`);
-        }
+    addMessage(`📨 <b>${data.channel}</b>: ${messageDisplay}`, "incoming", true);
+    };
 
-        function sendMessage() {
-            const channel = document.getElementById('channelInput').value;
-            const message = document.getElementById('messageInput').value;
-            ws.send(JSON.stringify({ action: 'message', channel, message }));
-            addMessage(`Sent to ${channel}: ${message}`);
-        }
-    </script>
+    function setStatus(connected) {
+      if (connected) {
+        statusDot.classList.replace('bg-red-500', 'bg-green-500');
+        statusText.textContent = 'Connected';
+        addMessage("✅ Connected to WebSocket server", "system");
+      } else {
+        statusDot.classList.replace('bg-green-500', 'bg-red-500');
+        statusText.textContent = 'Disconnected';
+        addMessage("❌ Disconnected from WebSocket server", "system");
+      }
+    }
+
+    function addMessage(message, type = "default", isHtml = false) {
+        const el = document.createElement('div');
+        el.className = "my-1 text-sm";
+
+        if (type === "incoming") el.classList.add("text-blue-700");
+        else if (type === "system") el.classList.add("text-gray-500", "italic");
+        else if (type === "error") el.classList.add("text-red-600");
+
+        if (isHtml) el.innerHTML = message;
+        else el.textContent = message;
+
+        messagesDiv.appendChild(el);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function subscribe() {
+      const channel = document.getElementById('channelInput').value.trim();
+      if (!channel) return alert("Please enter a channel name");
+      ws.send(JSON.stringify({ action: 'subscribe', channel }));
+      addMessage(`🟢 Subscribed to: ${channel}`, "system");
+    }
+
+    function unsubscribe() {
+      const channel = document.getElementById('channelInput').value.trim();
+      if (!channel) return alert("Please enter a channel name");
+      ws.send(JSON.stringify({ action: 'unsubscribe', channel }));
+      addMessage(`🔴 Unsubscribed from: ${channel}`, "system");
+    }
+
+    function sendMessage() {
+      const channel = document.getElementById('channelInput').value.trim();
+      const message = document.getElementById('messageInput').value.trim();
+      if (!channel || !message) return alert("Please fill both fields");
+      ws.send(JSON.stringify({ action: 'message', channel, message }));
+      addMessage(`📤 Sent to ${channel}: ${message}`, "default");
+      document.getElementById('messageInput').value = "";
+    }
+  </script>
+
 </body>
 </html>
