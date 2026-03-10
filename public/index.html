@@ -2,125 +2,443 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>WebSocket Client</title>
+  <title>Digisaka WebSocket Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .mono { font-family: 'Courier New', monospace; }
+    #messages::-webkit-scrollbar { width: 6px; }
+    #messages::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+<body class="bg-gray-100 min-h-screen p-4 md:p-8">
 
-  <div class="bg-white shadow-xl rounded-xl w-full max-w-4xl p-6">
-    <div class="flex items-center justify-between mb-4">
-        <div class="flex">
-            <img src="https://digisaka.app/images/digisaka_new.jpg" class="w-8 h-8"> 
-            <h1 class="text-2xl font-bold text-green-700"> Digisaka WebSocket Client</h1>
+  <div class="max-w-5xl mx-auto space-y-4">
+
+    <!-- Header -->
+    <div class="bg-white shadow rounded-xl p-5 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img src="https://digisaka.app/images/digisaka_new.jpg" class="w-8 h-8 rounded">
+        <h1 class="text-xl font-bold text-green-700">Digisaka WebSocket Dashboard</h1>
+      </div>
+      <div class="flex items-center gap-4">
+        <!-- Online Users Pill -->
+        <div id="onlinePill" class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-full px-3 py-1.5 cursor-pointer hover:bg-green-100 transition" onclick="toggleOnlinePanel()">
+          <span class="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></span>
+          <span class="text-sm font-semibold text-green-700"><span id="onlineCount">0</span> Online</span>
         </div>
-      
-      <div id="status" class="flex items-center space-x-2">
-        <span id="statusDot" class="w-3 h-3 bg-red-500 rounded-full"></span>
-        <span id="statusText" class="text-sm text-gray-600">Disconnected</span>
+        <div id="status" class="flex items-center gap-2">
+          <span id="statusDot" class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+          <span id="statusText" class="text-sm text-gray-600">Disconnected</span>
+        </div>
+        <span id="socketIdBadge" class="hidden text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded mono"></span>
       </div>
     </div>
 
-    <!-- Channel subscription -->
-    <div class="flex items-center space-x-2 mb-4">
-      <input type="text" id="channelInput" placeholder="Enter channel name"
-        class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
-      <button onclick="subscribe()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-        Subscribe
-      </button>
-      <button onclick="unsubscribe()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition">
-        Unsubscribe
-      </button>
+    <!-- Online Users Panel (collapsible) -->
+    <div id="onlinePanel" class="hidden bg-white shadow rounded-xl overflow-hidden">
+      <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+        <h2 class="font-semibold text-gray-700 flex items-center gap-2">
+          <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/></svg>
+          Recent Activity
+        </h2>
+        <button onclick="clearActivity()" class="text-xs text-gray-400 hover:text-red-500">Clear</button>
+      </div>
+      <div id="activityLog" class="max-h-64 overflow-y-auto divide-y divide-gray-50">
+        <div class="px-4 py-6 text-center text-gray-400 text-sm">Waiting for login/logout events...</div>
+      </div>
     </div>
 
-    <!-- Messages box -->
-    <div id="messages" class="border border-gray-300 rounded-lg h-80 overflow-y-auto p-3 bg-gray-50 mb-4"></div>
+    <!-- Stats Row -->
+    <div id="statsRow" class="hidden grid grid-cols-4 gap-3">
+      <div class="bg-white shadow rounded-lg p-4 text-center">
+        <div class="text-2xl font-bold text-blue-600" id="statConnections">0</div>
+        <div class="text-xs text-gray-500">Connections</div>
+      </div>
+      <div class="bg-white shadow rounded-lg p-4 text-center">
+        <div class="text-2xl font-bold text-green-600" id="statChannels">0</div>
+        <div class="text-xs text-gray-500">Channels</div>
+      </div>
+      <div class="bg-white shadow rounded-lg p-4 text-center">
+        <div class="text-2xl font-bold text-purple-600" id="statUptime">0s</div>
+        <div class="text-xs text-gray-500">Uptime</div>
+      </div>
+      <div class="bg-white shadow rounded-lg p-4 text-center">
+        <div class="text-2xl font-bold text-orange-600" id="statMemory">0</div>
+        <div class="text-xs text-gray-500">Memory (MB)</div>
+      </div>
+    </div>
 
-    <!-- Send message -->
-    <div class="flex items-center space-x-2">
-      <input type="text" id="messageInput" placeholder="Type a message"
-        class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-        onkeypress="if(event.key === 'Enter') sendMessage()">
-      <button onclick="sendMessage()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
-        Send
-      </button>
+    <!-- Controls -->
+    <div class="bg-white shadow rounded-xl p-5 space-y-3">
+      <!-- Identify -->
+      <div class="flex items-center gap-2">
+        <input type="text" id="userIdInput" placeholder="User ID (e.g. 42)"
+          class="w-32 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
+        <button onclick="doIdentify()" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
+          Identify
+        </button>
+      </div>
+
+      <!-- Channel subscription -->
+      <div class="flex items-center gap-2">
+        <input type="text" id="channelInput" placeholder="Channel name (e.g. alerts, private-user.5)"
+          class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+        <button onclick="doSubscribe()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+          Subscribe
+        </button>
+        <button onclick="doUnsubscribe()" class="bg-gray-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-600">
+          Unsub
+        </button>
+      </div>
+
+      <!-- Subscribed channels -->
+      <div id="channelTags" class="flex flex-wrap gap-2 text-xs"></div>
+    </div>
+
+    <!-- Messages -->
+    <div class="bg-white shadow rounded-xl p-5">
+      <div class="flex justify-between items-center mb-2">
+        <h2 class="font-semibold text-gray-700">Messages</h2>
+        <button onclick="clearMessages()" class="text-xs text-gray-400 hover:text-red-500">Clear</button>
+      </div>
+      <div id="messages" class="border border-gray-200 rounded-lg h-80 overflow-y-auto p-3 bg-gray-50 space-y-1"></div>
+
+      <!-- Send -->
+      <div class="flex items-center gap-2 mt-3">
+        <input type="text" id="messageInput" placeholder="Type a message..."
+          class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          onkeypress="if(event.key === 'Enter') doSendMessage()">
+        <button onclick="doSendMessage()" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
+          Send
+        </button>
+      </div>
+    </div>
+
+    <!-- REST API Trigger -->
+    <div class="bg-white shadow rounded-xl p-5 space-y-3">
+      <h2 class="font-semibold text-gray-700">REST API Trigger</h2>
+      <div class="grid grid-cols-3 gap-2">
+        <input type="text" id="triggerChannel" placeholder="Channel" class="border rounded-lg px-3 py-2 text-sm">
+        <input type="text" id="triggerEvent" placeholder="Event name" class="border rounded-lg px-3 py-2 text-sm">
+        <input type="text" id="triggerData" placeholder='{"key":"value"}' class="border rounded-lg px-3 py-2 text-sm">
+      </div>
+      <div class="flex gap-2">
+        <input type="text" id="apiKey" placeholder="App Key" value="digisaka-ws-key-2026"
+          class="flex-1 border rounded-lg px-3 py-2 text-sm">
+        <input type="text" id="apiSecret" placeholder="App Secret" value="digisaka-ws-secret-change-me-in-production"
+          class="flex-1 border rounded-lg px-3 py-2 text-sm">
+        <button onclick="doApiTrigger()" class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700">
+          Trigger
+        </button>
+      </div>
     </div>
   </div>
 
   <script>
-    const ws = new WebSocket('ws://localhost:8080');
+    // ─── State ──────────────────────────────────────
+    let ws = null;
+    let socketId = null;
+    const subscribed = new Set();
+    const BASE = location.origin; // REST API base
+    let statsInterval = null;
+    let onlinePanelOpen = false;
+    const activityItems = []; // recent login/logout events
 
-    const statusDot = document.getElementById('statusDot');
-    const statusText = document.getElementById('statusText');
-    const messagesDiv = document.getElementById('messages');
+    // ─── Connect ────────────────────────────────────
+    function connect() {
+      const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+      ws = new WebSocket(`${protocol}://${location.host}`);
 
-    ws.onopen = () => setStatus(true);
-    ws.onclose = () => setStatus(false);
-    ws.onerror = (err) => addMessage(`⚠️ WebSocket error: ${err.message}`, "error");
+      ws.onopen = () => {};
 
-    ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    
-    let messageDisplay;
+      ws.onmessage = (e) => {
+        let msg;
+        try { msg = JSON.parse(e.data); } catch { return; }
 
-    if (typeof data.message === 'object') {
-        messageDisplay = `<pre class="bg-gray-100 text-gray-800 p-2 rounded-md text-xs overflow-x-auto">${JSON.stringify(data.message, null, 2)}</pre>`;
-    } else {
-        messageDisplay = data.message;
+        let data = msg.data;
+        if (typeof data === 'string') {
+          try { data = JSON.parse(data); } catch {}
+        }
+
+        switch (msg.event) {
+          case 'connection_established':
+            socketId = data.socket_id;
+            setStatus(true);
+            document.getElementById('socketIdBadge').textContent = socketId;
+            document.getElementById('socketIdBadge').classList.remove('hidden');
+            addMessage(`Connected — socket_id: ${socketId}`, 'system');
+            startStats();
+            // Auto-subscribe to admin activity channel
+            ws.send(JSON.stringify({ event: 'subscribe', channel: 'admin-activity' }));
+            subscribed.add('admin-activity');
+            renderTags();
+            break;
+
+          case 'identified':
+            addMessage(`Identified as user ${data.user_id}`, 'system');
+            break;
+
+          case 'subscription_succeeded':
+            addMessage(`Subscribed to: ${msg.channel}`, 'system');
+            break;
+
+          case 'subscription_error':
+            addMessage(`Subscribe error on ${msg.channel}: ${data.message}`, 'error');
+            subscribed.delete(msg.channel);
+            renderTags();
+            break;
+
+          case 'error':
+            addMessage(`Server error: ${JSON.stringify(data)}`, 'error');
+            break;
+
+          default:
+            // Handle real-time login/logout events
+            if (msg.event === 'user-login' || msg.event === 'user-logout') {
+              handleActivityEvent(msg.event, data);
+            }
+
+            const chLabel = msg.channel ? `[${msg.channel}] ` : '';
+            const display = typeof data === 'object'
+              ? `<pre class="bg-gray-100 p-2 rounded text-xs overflow-x-auto mt-1">${JSON.stringify(data, null, 2)}</pre>`
+              : String(data);
+            addMessage(`${chLabel}<b>${msg.event}</b>: ${display}`, 'incoming', true);
+        }
+      };
+
+      ws.onclose = () => {
+        setStatus(false);
+        socketId = null;
+        stopStats();
+        addMessage('Disconnected — reconnecting in 3s...', 'error');
+        setTimeout(connect, 3000);
+      };
+
+      ws.onerror = () => {};
     }
 
-    addMessage(`📨 <b>${data.channel}</b>: ${messageDisplay}`, "incoming", true);
-    };
+    // ─── Actions ────────────────────────────────────
+    function doIdentify() {
+      const uid = document.getElementById('userIdInput').value.trim();
+      if (!uid) return;
+      ws.send(JSON.stringify({ event: 'identify', user_id: uid }));
+    }
 
-    function setStatus(connected) {
-      if (connected) {
-        statusDot.classList.replace('bg-red-500', 'bg-green-500');
-        statusText.textContent = 'Connected';
-        addMessage("✅ Connected to WebSocket server", "system");
-      } else {
-        statusDot.classList.replace('bg-green-500', 'bg-red-500');
-        statusText.textContent = 'Disconnected';
-        addMessage("❌ Disconnected from WebSocket server", "system");
+    function doSubscribe() {
+      const ch = document.getElementById('channelInput').value.trim();
+      if (!ch) return;
+      subscribed.add(ch);
+      ws.send(JSON.stringify({ event: 'subscribe', channel: ch }));
+      renderTags();
+    }
+
+    function doUnsubscribe() {
+      const ch = document.getElementById('channelInput').value.trim();
+      if (!ch) return;
+      subscribed.delete(ch);
+      ws.send(JSON.stringify({ event: 'unsubscribe', channel: ch }));
+      renderTags();
+    }
+
+    function doSendMessage() {
+      const ch = document.getElementById('channelInput').value.trim();
+      const msg = document.getElementById('messageInput').value.trim();
+      if (!ch || !msg) return;
+      ws.send(JSON.stringify({ event: 'message', channel: ch, message: msg }));
+      addMessage(`Sent to ${ch}: ${msg}`, 'outgoing');
+      document.getElementById('messageInput').value = '';
+    }
+
+    async function doApiTrigger() {
+      const channel = document.getElementById('triggerChannel').value.trim();
+      const event = document.getElementById('triggerEvent').value.trim();
+      const dataStr = document.getElementById('triggerData').value.trim() || '{}';
+      const key = document.getElementById('apiKey').value.trim();
+      const secret = document.getElementById('apiSecret').value.trim();
+      if (!channel || !event) return alert('Channel and event required');
+
+      let data;
+      try { data = JSON.parse(dataStr); } catch { return alert('Invalid JSON data'); }
+
+      try {
+        const res = await fetch(`${BASE}/api/trigger`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-App-Key': key,
+            'X-App-Signature': secret,
+          },
+          body: JSON.stringify({ channels: [channel], event, data }),
+        });
+        const json = await res.json();
+        addMessage(`API ${res.ok ? 'OK' : 'FAIL'}: ${JSON.stringify(json)}`, res.ok ? 'system' : 'error');
+      } catch (err) {
+        addMessage(`API Error: ${err.message}`, 'error');
       }
     }
 
-    function addMessage(message, type = "default", isHtml = false) {
-        const el = document.createElement('div');
-        el.className = "my-1 text-sm";
-
-        if (type === "incoming") el.classList.add("text-blue-700");
-        else if (type === "system") el.classList.add("text-gray-500", "italic");
-        else if (type === "error") el.classList.add("text-red-600");
-
-        if (isHtml) el.innerHTML = message;
-        else el.textContent = message;
-
-        messagesDiv.appendChild(el);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    // ─── Stats ──────────────────────────────────────
+    function startStats() {
+      document.getElementById('statsRow').classList.remove('hidden');
+      document.getElementById('statsRow').classList.add('grid');
+      fetchStats();
+      statsInterval = setInterval(fetchStats, 5000);
     }
 
-    function subscribe() {
-      const channel = document.getElementById('channelInput').value.trim();
-      if (!channel) return alert("Please enter a channel name");
-      ws.send(JSON.stringify({ action: 'subscribe', channel }));
-      addMessage(`🟢 Subscribed to: ${channel}`, "system");
+    function stopStats() {
+      clearInterval(statsInterval);
+      document.getElementById('statsRow').classList.add('hidden');
     }
 
-    function unsubscribe() {
-      const channel = document.getElementById('channelInput').value.trim();
-      if (!channel) return alert("Please enter a channel name");
-      ws.send(JSON.stringify({ action: 'unsubscribe', channel }));
-      addMessage(`🔴 Unsubscribed from: ${channel}`, "system");
+    async function fetchStats() {
+      try {
+        const res = await fetch(`${BASE}/health`);
+        if (!res.ok) return;
+        const d = await res.json();
+        document.getElementById('statConnections').textContent = d.connections ?? 0;
+        document.getElementById('statUptime').textContent = formatUptime(d.uptime ?? 0);
+      } catch {}
+      try {
+        const key = document.getElementById('apiKey').value.trim();
+        const secret = document.getElementById('apiSecret').value.trim();
+        const res = await fetch(`${BASE}/api/stats`, {
+          headers: { 'X-App-Key': key, 'X-App-Signature': secret },
+        });
+        if (!res.ok) return;
+        const d = await res.json();
+        document.getElementById('statChannels').textContent = d.channels?.total ?? 0;
+        document.getElementById('statMemory').textContent = d.memory?.heapUsedMB ?? 0;
+      } catch {}
     }
 
-    function sendMessage() {
-      const channel = document.getElementById('channelInput').value.trim();
-      const message = document.getElementById('messageInput').value.trim();
-      if (!channel || !message) return alert("Please fill both fields");
-      ws.send(JSON.stringify({ action: 'message', channel, message }));
-      addMessage(`📤 Sent to ${channel}: ${message}`, "default");
-      document.getElementById('messageInput').value = "";
+    function formatUptime(s) {
+      if (s < 60) return `${Math.floor(s)}s`;
+      if (s < 3600) return `${Math.floor(s / 60)}m`;
+      return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
     }
+
+    // ─── UI Helpers ─────────────────────────────────
+    function setStatus(connected) {
+      const dot = document.getElementById('statusDot');
+      const text = document.getElementById('statusText');
+      if (connected) {
+        dot.className = 'w-3 h-3 bg-green-500 rounded-full';
+        text.textContent = 'Connected';
+      } else {
+        dot.className = 'w-3 h-3 bg-red-500 rounded-full animate-pulse';
+        text.textContent = 'Disconnected';
+        document.getElementById('socketIdBadge').classList.add('hidden');
+      }
+    }
+
+    function addMessage(message, type = 'default', isHtml = false) {
+      const el = document.createElement('div');
+      el.className = 'text-sm py-0.5';
+      const time = new Date().toLocaleTimeString();
+      const prefix = `<span class="text-gray-400 text-xs mr-1">${time}</span>`;
+
+      const colors = {
+        incoming: 'text-blue-700',
+        outgoing: 'text-green-700',
+        system: 'text-gray-500 italic',
+        error: 'text-red-600',
+        default: 'text-gray-800',
+      };
+      el.classList.add(...(colors[type] || 'text-gray-800').split(' '));
+
+      el.innerHTML = prefix + (isHtml ? message : escapeHtml(message));
+      const div = document.getElementById('messages');
+      div.appendChild(el);
+      div.scrollTop = div.scrollHeight;
+    }
+
+    function clearMessages() {
+      document.getElementById('messages').innerHTML = '';
+    }
+
+    function renderTags() {
+      const container = document.getElementById('channelTags');
+      container.innerHTML = '';
+      subscribed.forEach(ch => {
+        const tag = document.createElement('span');
+        tag.className = 'bg-blue-100 text-blue-700 px-2 py-1 rounded-full cursor-pointer hover:bg-blue-200';
+        tag.textContent = ch;
+        tag.onclick = () => {
+          document.getElementById('channelInput').value = ch;
+        };
+        container.appendChild(tag);
+      });
+    }
+
+    function escapeHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    // ─── Online Users / Activity ──────────────────
+    function handleActivityEvent(event, data) {
+      const isLogin = event === 'user-login';
+
+      // Update the online count pill
+      if (data.online_count !== undefined) {
+        document.getElementById('onlineCount').textContent = data.online_count;
+        const pill = document.getElementById('onlinePill');
+        // Pulse animation on change
+        pill.classList.add('ring-2', isLogin ? 'ring-green-300' : 'ring-red-300');
+        setTimeout(() => pill.classList.remove('ring-2', 'ring-green-300', 'ring-red-300'), 1500);
+      }
+
+      // Add to activity log
+      const item = {
+        type: isLogin ? 'login' : 'logout',
+        name: data.name || `User #${data.user_id}`,
+        userId: data.user_id,
+        time: data.timestamp ? new Date(data.timestamp) : new Date(),
+      };
+      activityItems.unshift(item);
+      if (activityItems.length > 50) activityItems.pop(); // keep last 50
+      renderActivity();
+    }
+
+    function renderActivity() {
+      const log = document.getElementById('activityLog');
+      if (activityItems.length === 0) {
+        log.innerHTML = '<div class="px-4 py-6 text-center text-gray-400 text-sm">Waiting for login/logout events...</div>';
+        return;
+      }
+      log.innerHTML = activityItems.map(item => {
+        const isLogin = item.type === 'login';
+        const dotColor = isLogin ? 'bg-green-400' : 'bg-red-400';
+        const bgColor = isLogin ? 'bg-green-50' : 'bg-red-50';
+        const textColor = isLogin ? 'text-green-700' : 'text-red-600';
+        const label = isLogin ? 'logged in' : 'logged out';
+        const timeStr = item.time.toLocaleTimeString();
+        return `
+          <div class="flex items-center gap-3 px-4 py-2.5 hover:${bgColor} transition">
+            <span class="w-2 h-2 ${dotColor} rounded-full flex-shrink-0"></span>
+            <div class="flex-1 min-w-0">
+              <span class="text-sm font-medium text-gray-800">${escapeHtml(item.name)}</span>
+              <span class="text-sm ${textColor} ml-1">${label}</span>
+            </div>
+            <span class="text-xs text-gray-400 flex-shrink-0">${timeStr}</span>
+          </div>`;
+      }).join('');
+    }
+
+    function toggleOnlinePanel() {
+      const panel = document.getElementById('onlinePanel');
+      onlinePanelOpen = !onlinePanelOpen;
+      panel.classList.toggle('hidden', !onlinePanelOpen);
+    }
+
+    function clearActivity() {
+      activityItems.length = 0;
+      renderActivity();
+    }
+
+    // ─── Init ───────────────────────────────────────
+    connect();
   </script>
-
 </body>
 </html>

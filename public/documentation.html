@@ -1,0 +1,1876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digisaka WebSocket — Documentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg-surface: #161922;
+    --bg-surface-2: #1c2030;
+    --bg-surface-3: #232839;
+    --border: #2a2f42;
+    --border-light: #353b52;
+    --text: #e4e6f0;
+    --text-muted: #9097b3;
+    --text-dim: #6b7194;
+    --accent: #6c8cff;
+    --accent-dim: #4c6adf;
+    --accent-bg: rgba(108, 140, 255, 0.08);
+    --green: #34d399;
+    --green-bg: rgba(52, 211, 153, 0.08);
+    --yellow: #fbbf24;
+    --yellow-bg: rgba(251, 191, 36, 0.08);
+    --red: #f87171;
+    --red-bg: rgba(248, 113, 113, 0.08);
+    --purple: #a78bfa;
+    --purple-bg: rgba(167, 139, 250, 0.08);
+    --orange: #fb923c;
+    --code-bg: #111420;
+    --code-border: #252a3d;
+    --sidebar-w: 280px;
+    --header-h: 56px;
+    --radius: 8px;
+    --radius-sm: 6px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: calc(var(--header-h) + 24px);
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 14.5px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── Header ───────────────────────────────── */
+  .header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: var(--header-h);
+    background: rgba(15, 17, 23, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .header-logo {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.3px;
+  }
+
+  .header-logo span {
+    color: var(--text-muted);
+    font-weight: 400;
+    font-size: 14px;
+    margin-left: 8px;
+  }
+
+  .header-badge {
+    background: var(--green-bg);
+    color: var(--green);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(52, 211, 153, 0.15);
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .header-link {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    transition: all 0.15s;
+  }
+
+  .header-link:hover { color: var(--text); background: var(--bg-surface); }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 16px;
+    border-radius: var(--radius-sm);
+    transition: all 0.15s;
+    border: none;
+    cursor: pointer;
+  }
+
+  .btn-primary:hover { background: var(--accent-dim); }
+
+  .menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: var(--radius-sm);
+  }
+
+  .menu-toggle:hover { color: var(--text); background: var(--bg-surface); }
+
+  /* ─── Sidebar ──────────────────────────────── */
+  .sidebar {
+    position: fixed;
+    top: var(--header-h);
+    left: 0;
+    bottom: 0;
+    width: var(--sidebar-w);
+    background: var(--bg);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 0;
+    z-index: 90;
+    transition: transform 0.25s ease;
+  }
+
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .nav-group { margin-bottom: 8px; }
+
+  .nav-group-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-dim);
+    padding: 8px 20px 4px;
+  }
+
+  .nav-link {
+    display: block;
+    padding: 6px 20px 6px 28px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 450;
+    transition: all 0.12s;
+    border-left: 2px solid transparent;
+  }
+
+  .nav-link:hover {
+    color: var(--text);
+    background: var(--bg-surface);
+  }
+
+  .nav-link.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: var(--accent-bg);
+    font-weight: 500;
+  }
+
+  .nav-sub-link {
+    padding-left: 44px;
+    font-size: 12.5px;
+    color: var(--text-dim);
+  }
+
+  .nav-sub-link:hover { color: var(--text-muted); }
+
+  /* ─── Main Content ─────────────────────────── */
+  .main {
+    margin-left: var(--sidebar-w);
+    margin-top: var(--header-h);
+    min-height: calc(100vh - var(--header-h));
+    max-width: 860px;
+    padding: 40px 48px 80px;
+  }
+
+  /* ─── Typography ───────────────────────────── */
+  h1 {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+    color: #fff;
+  }
+
+  h2 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    margin-top: 56px;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    color: #fff;
+  }
+
+  h3 {
+    font-size: 17px;
+    font-weight: 600;
+    margin-top: 36px;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+
+  h4 {
+    font-size: 14.5px;
+    font-weight: 600;
+    margin-top: 24px;
+    margin-bottom: 8px;
+    color: var(--text-muted);
+  }
+
+  p {
+    margin-bottom: 14px;
+    color: var(--text-muted);
+  }
+
+  .subtitle {
+    font-size: 16px;
+    color: var(--text-dim);
+    margin-bottom: 32px;
+    line-height: 1.6;
+  }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  strong, b { color: var(--text); font-weight: 600; }
+
+  /* ─── Code ─────────────────────────────────── */
+  code {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    padding: 2px 7px;
+    border-radius: 4px;
+    color: var(--accent);
+  }
+
+  pre {
+    position: relative;
+    margin: 12px 0 20px;
+    padding: 0;
+    border-radius: var(--radius);
+    border: 1px solid var(--code-border);
+    background: var(--code-bg);
+    overflow: hidden;
+  }
+
+  pre .code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--code-border);
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  pre .code-header .lang-label {
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  pre .copy-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    cursor: pointer;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+
+  pre .copy-btn:hover {
+    color: var(--text);
+    border-color: var(--border-light);
+    background: var(--bg-surface-2);
+  }
+
+  pre .copy-btn.copied {
+    color: var(--green);
+    border-color: rgba(52, 211, 153, 0.3);
+  }
+
+  pre code {
+    display: block;
+    padding: 16px 18px;
+    overflow-x: auto;
+    background: none;
+    border: none;
+    border-radius: 0;
+    color: var(--text-muted);
+    line-height: 1.65;
+    font-size: 12.5px;
+  }
+
+  pre code::-webkit-scrollbar { height: 5px; }
+  pre code::-webkit-scrollbar-track { background: transparent; }
+  pre code::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* ─── Tables ───────────────────────────────── */
+  .table-wrap {
+    overflow-x: auto;
+    margin: 12px 0 20px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead {
+    background: var(--bg-surface);
+  }
+
+  th {
+    text-align: left;
+    padding: 10px 16px;
+    font-weight: 600;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+    vertical-align: top;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg-surface); }
+  td code { font-size: 12px; white-space: nowrap; }
+
+  /* ─── Callouts ─────────────────────────────── */
+  .callout {
+    padding: 14px 18px;
+    border-radius: var(--radius);
+    margin: 16px 0;
+    font-size: 13.5px;
+    line-height: 1.6;
+    border: 1px solid;
+  }
+
+  .callout-title {
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .callout p { margin-bottom: 6px; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .callout-info {
+    background: var(--accent-bg);
+    border-color: rgba(108, 140, 255, 0.15);
+    color: var(--text-muted);
+  }
+  .callout-info .callout-title { color: var(--accent); }
+
+  .callout-warn {
+    background: var(--yellow-bg);
+    border-color: rgba(251, 191, 36, 0.15);
+    color: var(--text-muted);
+  }
+  .callout-warn .callout-title { color: var(--yellow); }
+
+  .callout-danger {
+    background: var(--red-bg);
+    border-color: rgba(248, 113, 113, 0.15);
+    color: var(--text-muted);
+  }
+  .callout-danger .callout-title { color: var(--red); }
+
+  .callout-success {
+    background: var(--green-bg);
+    border-color: rgba(52, 211, 153, 0.15);
+    color: var(--text-muted);
+  }
+  .callout-success .callout-title { color: var(--green); }
+
+  /* ─── Badges ───────────────────────────────── */
+  .method-badge {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.5px;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  .method-get { background: var(--green-bg); color: var(--green); border: 1px solid rgba(52,211,153,0.2); }
+  .method-post { background: var(--accent-bg); color: var(--accent); border: 1px solid rgba(108,140,255,0.2); }
+  .method-ws { background: var(--purple-bg); color: var(--purple); border: 1px solid rgba(167,139,250,0.2); }
+
+  .channel-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .channel-public { background: var(--green-bg); color: var(--green); border: 1px solid rgba(52,211,153,0.15); }
+  .channel-private { background: var(--yellow-bg); color: var(--yellow); border: 1px solid rgba(251,191,36,0.15); }
+  .channel-presence { background: var(--purple-bg); color: var(--purple); border: 1px solid rgba(167,139,250,0.15); }
+
+  /* ─── Diagram ──────────────────────────────── */
+  .arch-diagram {
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    margin: 16px 0 24px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-dim);
+    white-space: pre;
+  }
+
+  /* ─── Endpoint Card ────────────────────────── */
+  .endpoint-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin: 16px 0;
+    overflow: hidden;
+  }
+
+  .endpoint-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.12s;
+  }
+
+  .endpoint-header:hover { background: var(--bg-surface-2); }
+
+  .endpoint-path {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .endpoint-desc {
+    color: var(--text-dim);
+    font-size: 12.5px;
+    margin-left: auto;
+  }
+
+  .endpoint-chevron {
+    color: var(--text-dim);
+    transition: transform 0.2s;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .endpoint-card.open .endpoint-chevron { transform: rotate(90deg); }
+
+  .endpoint-body {
+    display: none;
+    padding: 18px;
+  }
+
+  .endpoint-card.open .endpoint-body { display: block; }
+
+  /* ─── Flow Diagram ─────────────────────────── */
+  .flow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin: 8px 0;
+  }
+
+  .flow-num {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    border-radius: 50%;
+    background: var(--accent-bg);
+    border: 1px solid rgba(108, 140, 255, 0.2);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .flow-content { flex: 1; padding-top: 2px; }
+  .flow-content strong { display: block; margin-bottom: 2px; }
+
+  /* ─── Lists ────────────────────────────────── */
+  ul, ol {
+    margin: 8px 0 16px 20px;
+    color: var(--text-muted);
+  }
+
+  li { margin-bottom: 4px; }
+  li code { font-size: 12px; }
+
+  /* ─── Checklist ────────────────────────────── */
+  .checklist {
+    list-style: none;
+    margin-left: 0;
+  }
+
+  .checklist li {
+    padding: 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .checklist li::before {
+    content: '';
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    border-radius: 4px;
+    border: 1.5px solid var(--border-light);
+    background: var(--bg-surface);
+  }
+
+  /* ─── HR ────────────────────────────────────── */
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 40px 0;
+  }
+
+  /* ─── Search ───────────────────────────────── */
+  .search-box {
+    padding: 12px 20px;
+    margin-bottom: 8px;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 5;
+  }
+
+  .search-box input {
+    width: 100%;
+    padding: 8px 12px 8px 34px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .search-box input::placeholder { color: var(--text-dim); }
+  .search-box input:focus { border-color: var(--accent); }
+
+  .search-box .search-icon {
+    position: absolute;
+    top: 50%;
+    left: 32px;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+    font-size: 13px;
+    pointer-events: none;
+  }
+
+  /* ─── Tabs ─────────────────────────────────── */
+  .tabs {
+    display: flex;
+    gap: 0;
+    margin: 16px 0 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tab {
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .tab:hover { color: var(--text-muted); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .tab-panel { display: none; margin-top: 0; }
+  .tab-panel.active { display: block; }
+
+  /* ─── Back to top ──────────────────────────── */
+  .back-to-top {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--bg-surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s;
+    z-index: 80;
+  }
+
+  .back-to-top.visible { opacity: 1; pointer-events: all; }
+  .back-to-top:hover { background: var(--bg-surface-3); color: var(--text); }
+
+  /* ─── Overlay (mobile sidebar) ─────────────── */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 85;
+  }
+
+  /* ─── Responsive ───────────────────────────── */
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+
+    .sidebar.open { transform: translateX(0); }
+
+    .sidebar-overlay.open { display: block; }
+
+    .main {
+      margin-left: 0;
+      padding: 32px 20px 60px;
+    }
+
+    .menu-toggle { display: block; }
+
+    h1 { font-size: 26px; }
+    h2 { font-size: 19px; margin-top: 40px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ HEADER ═══════════ -->
+<header class="header">
+  <div class="header-left">
+    <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+    </button>
+    <div class="header-logo">
+      Digisaka <span>WebSocket Docs</span>
+    </div>
+    <div class="header-badge">v2.0</div>
+  </div>
+  <div class="header-right">
+    <a href="/" class="header-link">Dashboard</a>
+    <a href="/health" class="header-link">Health</a>
+    <a href="https://github.com/leads-agri" class="btn-primary" target="_blank">GitHub</a>
+  </div>
+</header>
+
+<!-- ═══════════ SIDEBAR ═══════════ -->
+<div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+<nav class="sidebar" id="sidebar">
+  <div class="search-box" style="position:relative;">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="sidebarSearch" placeholder="Search docs..." oninput="filterNav(this.value)">
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">Getting Started</div>
+    <a href="#overview" class="nav-link">Overview</a>
+    <a href="#quick-start" class="nav-link">Quick Start</a>
+    <a href="#configuration" class="nav-link">Configuration</a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">Protocol</div>
+    <a href="#connection-flow" class="nav-link">Connection Flow</a>
+    <a href="#client-events" class="nav-link">Client → Server Events</a>
+    <a href="#server-events" class="nav-link">Server → Client Events</a>
+    <a href="#error-codes" class="nav-link">Error Codes</a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">Channels</div>
+    <a href="#channels" class="nav-link">Channel Types</a>
+    <a href="#channel-public" class="nav-link nav-sub-link">Public</a>
+    <a href="#channel-private" class="nav-link nav-sub-link">Private</a>
+    <a href="#channel-presence" class="nav-link nav-sub-link">Presence</a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">REST API</div>
+    <a href="#api-overview" class="nav-link">Overview & Auth</a>
+    <a href="#api-trigger" class="nav-link nav-sub-link">POST /api/trigger</a>
+    <a href="#api-broadcast" class="nav-link nav-sub-link">POST /api/broadcast</a>
+    <a href="#api-auth" class="nav-link nav-sub-link">POST /api/auth</a>
+    <a href="#api-channels" class="nav-link nav-sub-link">GET /api/channels</a>
+    <a href="#api-stats" class="nav-link nav-sub-link">GET /api/stats</a>
+    <a href="#api-health" class="nav-link nav-sub-link">GET /health</a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">Integration</div>
+    <a href="#laravel" class="nav-link">Laravel (PHP)</a>
+    <a href="#vue" class="nav-link">Vue 3 (Admin)</a>
+    <a href="#flutter" class="nav-link">Flutter (Mobile)</a>
+    <a href="#raw-ws" class="nav-link">Raw WebSocket</a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">Operations</div>
+    <a href="#security" class="nav-link">Security</a>
+    <a href="#deployment" class="nav-link">Production Deploy</a>
+    <a href="#monitoring" class="nav-link">Monitoring</a>
+    <a href="#structure" class="nav-link">Project Structure</a>
+  </div>
+</nav>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<main class="main">
+
+  <!-- ── Overview ─────────────────────────── -->
+  <section id="overview">
+    <h1>Digisaka WebSocket Server</h1>
+    <p class="subtitle">
+      Production-ready, Pusher-compatible WebSocket server for real-time communication between the Laravel API, Vue admin panel, and Flutter mobile app.
+    </p>
+
+    <div class="arch-diagram">┌──────────────────────────────────────────────────────────┐
+│              Digisaka WebSocket Server                    │
+│                 Node.js  ·  Port 6001                    │
+│                                                          │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │
+│  │  Connection   │  │   Channel    │  │   REST API   │   │
+│  │   Manager     │  │   Manager    │  │  (Express)   │   │
+│  │ • Socket IDs  │  │ • public     │  │ • /trigger   │   │
+│  │ • IP limits   │  │ • private-   │  │ • /broadcast │   │
+│  │ • User map    │  │ • presence-  │  │ • /auth      │   │
+│  └──────────────┘  └──────────────┘  │ • /channels  │   │
+│                                      │ • /stats     │   │
+│  ┌──────────────┐  ┌──────────────┐  └──────────────┘   │
+│  │     Auth      │  │ Rate Limiter │                     │
+│  │ • HMAC-256    │  │ • Per socket │  ┌──────────────┐   │
+│  │ • Signatures  │  │ • Sliding    │  │   Logger     │   │
+│  └──────────────┘  └──────────────┘  └──────────────┘   │
+└──────────────────────────┬───────────────────────────────┘
+                           │
+          ┌────────────────┼────────────────┐
+          │                │                │
+  ┌───────▼──────┐  ┌─────▼─────┐  ┌───────▼──────┐
+  │  Laravel API  │  │  Vue 3    │  │ Flutter App  │
+  │  (triggers)   │  │  (admin)  │  │  (mobile)    │
+  └──────────────┘  └───────────┘  └──────────────┘</div>
+
+    <div class="callout callout-info">
+      <div class="callout-title">ℹ How it works</div>
+      <p><strong>Clients</strong> (Vue, Flutter, browser) connect via WebSocket and subscribe to channels.</p>
+      <p><strong>Laravel</strong> pushes events through the REST API (<code>POST /api/trigger</code>).</p>
+      <p>The server broadcasts events to all subscribers of the targeted channel(s).</p>
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- ── Quick Start ──────────────────────── -->
+  <section id="quick-start">
+    <h2>Quick Start</h2>
+
+    <h3>Prerequisites</h3>
+    <ul>
+      <li>Node.js <strong>18+</strong></li>
+      <li>npm</li>
+    </ul>
+
+    <h3>Install &amp; Run</h3>
+    <pre><div class="code-header"><span class="lang-label">bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>cd websocket/
+
+# Install dependencies
+npm install
+
+# Copy and configure environment
+cp .env.example .env
+# Edit .env with your secrets
+
+# Start the server
+npm start
+
+# Or development mode with auto-restart
+npm run dev</code></pre>
+
+    <h3>Verify</h3>
+    <pre><div class="code-header"><span class="lang-label">bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>curl http://localhost:6001/health
+
+# Response:
+# { "status": "ok", "uptime": 12.34, "connections": 0, "timestamp": "..." }</code></pre>
+
+    <div class="callout callout-success">
+      <div class="callout-title">✓ Tip</div>
+      <p>Open <a href="/">http://localhost:6001/</a> for a visual test dashboard with live connection stats.</p>
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- ── Configuration ────────────────────── -->
+  <section id="configuration">
+    <h2>Configuration</h2>
+    <p>All configuration is via environment variables. Copy <code>.env.example</code> to <code>.env</code>:</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Variable</th><th>Default</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>PORT</code></td><td>6001</td><td>Server port</td></tr>
+          <tr><td><code>HOST</code></td><td>0.0.0.0</td><td>Bind address</td></tr>
+          <tr><td><code>APP_ID</code></td><td>digisaka</td><td>Application identifier</td></tr>
+          <tr><td><code>APP_KEY</code></td><td>digisaka-ws-key-2026</td><td>Public app key (sent by clients)</td></tr>
+          <tr><td><code>APP_SECRET</code></td><td><em>(change!)</em></td><td>Secret for HMAC signing &amp; API auth</td></tr>
+          <tr><td><code>ALLOWED_ORIGINS</code></td><td>*</td><td>Comma-separated CORS origins. Use <code>*</code> for dev only.</td></tr>
+          <tr><td><code>AUTH_ENDPOINT</code></td><td>—</td><td>Laravel endpoint for channel auth callbacks</td></tr>
+          <tr><td><code>RATE_LIMIT_POINTS</code></td><td>60</td><td>Max messages per connection per window</td></tr>
+          <tr><td><code>RATE_LIMIT_DURATION</code></td><td>60</td><td>Window in seconds</td></tr>
+          <tr><td><code>HEARTBEAT_INTERVAL</code></td><td>25000</td><td>Ping interval in ms</td></tr>
+          <tr><td><code>MAX_CONNECTIONS_PER_IP</code></td><td>50</td><td>Max connections from one IP (0 = no limit)</td></tr>
+          <tr><td><code>MAX_PAYLOAD_SIZE</code></td><td>65536</td><td>Max payload in bytes (64 KB)</td></tr>
+          <tr><td><code>LOG_LEVEL</code></td><td>info</td><td><code>debug</code> | <code>info</code> | <code>warn</code> | <code>error</code></td></tr>
+          <tr><td><code>SSL_CERT_PATH</code></td><td>—</td><td>Path to SSL cert (usually reverse proxy handles TLS)</td></tr>
+          <tr><td><code>SSL_KEY_PATH</code></td><td>—</td><td>Path to SSL key</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>Production .env example</h4>
+    <pre><div class="code-header"><span class="lang-label">dotenv</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>PORT=6001
+HOST=0.0.0.0
+APP_ID=digisaka
+APP_KEY=my-random-app-key-here
+APP_SECRET=my-very-secure-random-secret-64chars
+ALLOWED_ORIGINS=https://digisaka.online,https://digisaka.app
+LOG_LEVEL=info
+MAX_CONNECTIONS_PER_IP=50</code></pre>
+  </section>
+
+  <hr>
+
+  <!-- ── Protocol ─────────────────────────── -->
+  <section id="connection-flow">
+    <h2>Protocol Reference</h2>
+    <p>The server follows a <strong>Pusher-compatible</strong> event protocol. All messages are JSON.</p>
+
+    <h3>Connection Flow</h3>
+    <div class="arch-diagram">Client                              Server
+  │                                    │
+  │──── WS Connect ───────────────────►│
+  │                                    │
+  │◄── connection_established ────────│  (returns socket_id)
+  │                                    │
+  │──── identify (user_id) ──────────►│
+  │◄── identified ────────────────────│
+  │                                    │
+  │──── subscribe (channel) ─────────►│
+  │◄── subscription_succeeded ────────│
+  │                                    │
+  │◄── events from server ───────────│  (via REST API trigger)
+  │                                    │
+  │──── unsubscribe (channel) ───────►│
+  │──── close ───────────────────────►│</div>
+
+    <div class="flow-step"><div class="flow-num">1</div><div class="flow-content"><strong>Connect</strong><p>Client opens a WebSocket connection. Server replies with <code>connection_established</code> containing a unique <code>socket_id</code>.</p></div></div>
+    <div class="flow-step"><div class="flow-num">2</div><div class="flow-content"><strong>Identify (optional)</strong><p>Client sends <code>identify</code> with a <code>user_id</code> to associate the socket with an app user for direct messaging.</p></div></div>
+    <div class="flow-step"><div class="flow-num">3</div><div class="flow-content"><strong>Subscribe</strong><p>Client sends <code>subscribe</code> with a channel name. Private/presence channels require an <code>auth</code> token.</p></div></div>
+    <div class="flow-step"><div class="flow-num">4</div><div class="flow-content"><strong>Receive events</strong><p>Events triggered by the server (via REST API) or other clients are pushed to the subscriber.</p></div></div>
+  </section>
+
+  <hr>
+
+  <section id="client-events">
+    <h3>Client → Server Events</h3>
+
+    <h4><span class="method-badge method-ws">WS</span> identify</h4>
+    <p>Associate a user ID with this connection.</p>
+    <pre><div class="code-header"><span class="lang-label">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>{ "event": "identify", "user_id": "42" }</code></pre>
+    <p>Response:</p>
+    <pre><div class="code-header"><span class="lang-label">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>{ "event": "identified", "data": "{\"user_id\":\"42\",\"socket_id\":\"123456.7890123\"}" }</code></pre>
+
+    <h4><span class="method-badge method-ws">WS</span> subscribe</h4>
+    <p>Join a channel. For private/presence channels, include an <code>auth</code> token.</p>
+
+    <div class="tabs" data-tab-group="subscribe">
+      <div class="tab active" onclick="switchTab(this, 'sub-public')">Public</div>
+      <div class="tab" onclick="switchTab(this, 'sub-private')">Private</div>
+      <div class="tab" onclick="switchTab(this, 'sub-presence')">Presence</div>
+    </div>
+    <div id="sub-public" class="tab-panel active">
+      <pre><div class="code-header"><span class="lang-label">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>{ "event": "subscribe", "channel": "alerts" }</code></pre>
+    </div>
+    <div id="sub-private" class="tab-panel">
+      <pre><div class="code-header"><span class="lang-label">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>{
+  "event": "subscribe",
+  "channel": "private-user.5",
+  "auth": "digisaka-ws-key-2026:a1b2c3d4e5f6..."
+}</code></pre>
+    </div>
+    <div id="sub-presence" class="tab-panel">
+      <pre><div class="code-header"><span class="lang-label">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>{
+  "event": "subscribe",
+  "channel": "presence-chat.1",
+  "auth": "digisaka-ws-key-2026:a1b2c3d4e5f6...",
+  "channel_data": { "user_id": "5", "user_info": { "name": "Juan" } }
+}</code></pre>
+    </div>
+
+    <h4><span class="method-badge method-ws">WS</span> unsubscribe</h4>
+    <pre><div class="code-header"><span class="lang-label">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>{ "event": "unsubscribe", "channel": "alerts" }</code></pre>
+
+    <h4><span class="method-badge method-ws">WS</span> message (to channel)</h4>
+    <p>Broadcast a message to all other subscribers of a channel.</p>
+    <pre><div class="code-header"><span class="lang-label">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>{ "event": "message", "channel": "alerts", "message": "Hello everyone" }</code></pre>
+
+    <h4><span class="method-badge method-ws">WS</span> message (to users)</h4>
+    <p>Send a private message to specific users.</p>
+    <pre><div class="code-header"><span class="lang-label">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>{ "event": "message", "target_users": ["5", "12"], "message": { "text": "Hi" } }</code></pre>
+
+    <h4><span class="method-badge method-ws">WS</span> client-* events</h4>
+    <p>Events prefixed with <code>client-</code> are broadcast to the channel (excluding sender). Follows Pusher convention.</p>
+    <pre><div class="code-header"><span class="lang-label">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>{ "event": "client-typing", "channel": "presence-chat.1", "data": { "user": "John" } }</code></pre>
+
+    <h4><span class="method-badge method-ws">WS</span> pusher:ping</h4>
+    <p>Application-level heartbeat. Server replies with <code>pusher:pong</code>.</p>
+    <pre><div class="code-header"><span class="lang-label">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>{ "event": "pusher:ping" }</code></pre>
+  </section>
+
+  <hr>
+
+  <section id="server-events">
+    <h3>Server → Client Events</h3>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Event</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>connection_established</code></td><td>Sent immediately on connect. Contains <code>socket_id</code> and <code>activity_timeout</code>.</td></tr>
+          <tr><td><code>identified</code></td><td>Confirms user identity after <code>identify</code> message.</td></tr>
+          <tr><td><code>subscription_succeeded</code></td><td>Confirms channel join. Presence channels include member list.</td></tr>
+          <tr><td><code>subscription_error</code></td><td>Channel subscription rejected (auth failure or missing token).</td></tr>
+          <tr><td><code>error</code></td><td>General error (rate limit, invalid JSON). Contains <code>code</code> and <code>message</code>.</td></tr>
+          <tr><td><code>member_added</code></td><td>Presence channel: a new member joined.</td></tr>
+          <tr><td><code>member_removed</code></td><td>Presence channel: a member left.</td></tr>
+          <tr><td><code>client_message</code></td><td>A message sent by another client to the channel.</td></tr>
+          <tr><td><code>private_message</code></td><td>A direct message to this user specifically.</td></tr>
+          <tr><td><code>pusher:pong</code></td><td>Response to a <code>pusher:ping</code>.</td></tr>
+          <tr><td><em>(custom)</em></td><td>Any event triggered via the REST API (e.g. <code>new-alert</code>, <code>task-updated</code>).</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="error-codes">
+    <h3>Error Codes</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Code</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>4301</code></td><td>Rate limit exceeded</td></tr>
+          <tr><td><code>4400</code></td><td>Bad request (invalid JSON, missing fields)</td></tr>
+          <tr><td><code>4401</code></td><td>Authentication failed (channel subscription denied)</td></tr>
+          <tr><td><code>4429</code></td><td>Too many connections from this IP</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- ── Channels ─────────────────────────── -->
+  <section id="channels">
+    <h2>Channel Types</h2>
+
+    <div id="channel-public">
+      <h3><span class="channel-badge channel-public">public</span> Public Channels</h3>
+      <p>Any name <strong>without</strong> a <code>private-</code> or <code>presence-</code> prefix. No authentication required.</p>
+      <pre><div class="code-header"><span class="lang-label">examples</span></div><code>alerts
+news
+demo-trials
+farm-updates</code></pre>
+      <p>Any client can subscribe and receive events.</p>
+    </div>
+
+    <div id="channel-private">
+      <h3><span class="channel-badge channel-private">private-</span> Private Channels</h3>
+      <p>Prefixed with <code>private-</code>. Requires a valid <strong>auth token</strong> to subscribe.</p>
+      <pre><div class="code-header"><span class="lang-label">examples</span></div><code>private-user.42
+private-admin.notifications
+private-farm.15</code></pre>
+      <p>Auth token calculation:</p>
+      <pre><div class="code-header"><span class="lang-label">text</span></div><code>signature = HMAC-SHA256(APP_SECRET, "socketId:channelName")
+token     = "APP_KEY:signature"</code></pre>
+    </div>
+
+    <div id="channel-presence">
+      <h3><span class="channel-badge channel-presence">presence-</span> Presence Channels</h3>
+      <p>Prefixed with <code>presence-</code>. Requires auth + member info (<code>channel_data</code>).</p>
+      <pre><div class="code-header"><span class="lang-label">examples</span></div><code>presence-chat.room.1
+presence-editors.doc.5</code></pre>
+      <ul>
+        <li><strong>Member tracking</strong> — server maintains who is in the channel</li>
+        <li><code>member_added</code> event when someone joins</li>
+        <li><code>member_removed</code> event when someone leaves</li>
+        <li><code>subscription_succeeded</code> includes the current member list</li>
+      </ul>
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- ── REST API ─────────────────────────── -->
+  <section id="api-overview">
+    <h2>REST API Reference</h2>
+
+    <p>All authenticated endpoints require these headers:</p>
+    <pre><div class="code-header"><span class="lang-label">headers</span></div><code>X-App-Key: &lt;your APP_KEY&gt;
+X-App-Signature: &lt;your APP_SECRET&gt;</code></pre>
+
+    <div class="callout callout-info">
+      <div class="callout-title">ℹ Auth modes</div>
+      <p><strong>Simple match</strong> — <code>X-App-Signature</code> equals the raw secret (convenient for trusted server-to-server calls).</p>
+      <p><strong>HMAC-SHA256</strong> — <code>X-App-Signature</code> is <code>HMAC-SHA256(secret, requestBody)</code> for stricter security.</p>
+    </div>
+
+    <!-- Trigger -->
+    <div class="endpoint-card open" id="api-trigger">
+      <div class="endpoint-header" onclick="toggleEndpoint(this)">
+        <span class="method-badge method-post">POST</span>
+        <span class="endpoint-path">/api/trigger</span>
+        <span class="endpoint-desc">Push events to channel(s)</span>
+        <span class="endpoint-chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <p>The primary endpoint for server-side event broadcasting.</p>
+
+        <h4>Request body</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>channel</code></td><td>string</td><td>*</td><td>Single channel name</td></tr>
+              <tr><td><code>channels</code></td><td>string[]</td><td>*</td><td>Multiple channel names</td></tr>
+              <tr><td><code>event</code></td><td>string</td><td>yes</td><td>Event name</td></tr>
+              <tr><td><code>data</code></td><td>any</td><td>no</td><td>Event payload</td></tr>
+              <tr><td><code>socket_id</code></td><td>string</td><td>no</td><td>Exclude this socket (prevent echo)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>* Either <code>channel</code> or <code>channels</code> is required.</p>
+
+        <h4>Example</h4>
+        <pre><div class="code-header"><span class="lang-label">bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>curl -X POST http://localhost:6001/api/trigger \
+  -H "Content-Type: application/json" \
+  -H "X-App-Key: digisaka-ws-key-2026" \
+  -H "X-App-Signature: digisaka-ws-secret-change-me-in-production" \
+  -d '{
+    "channels": ["alerts", "private-admin"],
+    "event": "new-alert",
+    "data": { "farm_id": 5, "type": "drought", "severity": "high" }
+  }'</code></pre>
+
+        <h4>Response</h4>
+        <pre><div class="code-header"><span class="lang-label">json</span></div><code>{ "success": true, "channels": ["alerts", "private-admin"], "recipients": 8 }</code></pre>
+      </div>
+    </div>
+
+    <!-- Broadcast -->
+    <div class="endpoint-card" id="api-broadcast">
+      <div class="endpoint-header" onclick="toggleEndpoint(this)">
+        <span class="method-badge method-post">POST</span>
+        <span class="endpoint-path">/api/broadcast</span>
+        <span class="endpoint-desc">Send to specific users</span>
+        <span class="endpoint-chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <p>Send events directly to specific users across all their connected devices.</p>
+
+        <h4>Request body</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>user_ids</code></td><td>string[]</td><td>yes</td><td>Target user IDs</td></tr>
+              <tr><td><code>event</code></td><td>string</td><td>yes</td><td>Event name</td></tr>
+              <tr><td><code>data</code></td><td>any</td><td>no</td><td>Event payload</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>Example</h4>
+        <pre><div class="code-header"><span class="lang-label">bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>curl -X POST http://localhost:6001/api/broadcast \
+  -H "Content-Type: application/json" \
+  -H "X-App-Key: digisaka-ws-key-2026" \
+  -H "X-App-Signature: digisaka-ws-secret-change-me-in-production" \
+  -d '{
+    "user_ids": ["5", "12", "34"],
+    "event": "notification",
+    "data": { "title": "New task assigned" }
+  }'</code></pre>
+
+        <h4>Response</h4>
+        <pre><div class="code-header"><span class="lang-label">json</span></div><code>{ "success": true, "sent": 3 }</code></pre>
+      </div>
+    </div>
+
+    <!-- Auth -->
+    <div class="endpoint-card" id="api-auth">
+      <div class="endpoint-header" onclick="toggleEndpoint(this)">
+        <span class="method-badge method-post">POST</span>
+        <span class="endpoint-path">/api/auth</span>
+        <span class="endpoint-desc">Generate channel auth signatures</span>
+        <span class="endpoint-chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <p>Generate HMAC auth tokens for private/presence channel subscriptions.</p>
+
+        <h4>Request body</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>socket_id</code></td><td>string</td><td>yes</td><td>Client's socket ID</td></tr>
+              <tr><td><code>channel_name</code></td><td>string</td><td>yes</td><td>Channel to authorize</td></tr>
+              <tr><td><code>channel_data</code></td><td>object</td><td>presence only</td><td>Member info for presence channels</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>Example</h4>
+        <pre><div class="code-header"><span class="lang-label">bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>curl -X POST http://localhost:6001/api/auth \
+  -H "Content-Type: application/json" \
+  -H "X-App-Key: digisaka-ws-key-2026" \
+  -H "X-App-Signature: digisaka-ws-secret-change-me-in-production" \
+  -d '{ "socket_id": "123456.7890123", "channel_name": "private-user.5" }'</code></pre>
+
+        <h4>Response</h4>
+        <pre><div class="code-header"><span class="lang-label">json</span></div><code>{ "auth": "digisaka-ws-key-2026:a1b2c3d4e5f6abcdef..." }</code></pre>
+      </div>
+    </div>
+
+    <!-- Channels -->
+    <div class="endpoint-card" id="api-channels">
+      <div class="endpoint-header" onclick="toggleEndpoint(this)">
+        <span class="method-badge method-get">GET</span>
+        <span class="endpoint-path">/api/channels</span>
+        <span class="endpoint-desc">List active channels</span>
+        <span class="endpoint-chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <p>Returns all active channels with subscriber counts.</p>
+        <pre><div class="code-header"><span class="lang-label">json</span></div><code>{
+  "totalChannels": 3,
+  "channels": [
+    { "name": "alerts", "type": "public", "subscribers": 25 },
+    { "name": "private-admin", "type": "private", "subscribers": 2 },
+    { "name": "presence-chat.1", "type": "presence", "subscribers": 4 }
+  ]
+}</code></pre>
+
+        <p>Get a specific channel (presence channels include member list):</p>
+        <pre><div class="code-header"><span class="lang-label">bash</span></div><code>GET /api/channels/presence-chat.1</code></pre>
+        <pre><div class="code-header"><span class="lang-label">json</span></div><code>{
+  "name": "presence-chat.1",
+  "type": "presence",
+  "subscribers": 4,
+  "members": [
+    { "user_id": "5", "user_info": { "name": "Juan" } },
+    { "user_id": "12", "user_info": { "name": "Maria" } }
+  ]
+}</code></pre>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="endpoint-card" id="api-stats">
+      <div class="endpoint-header" onclick="toggleEndpoint(this)">
+        <span class="method-badge method-get">GET</span>
+        <span class="endpoint-path">/api/stats</span>
+        <span class="endpoint-desc">Server statistics</span>
+        <span class="endpoint-chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <pre><div class="code-header"><span class="lang-label">json</span></div><code>{
+  "connections": {
+    "total": 48,
+    "identified": 42,
+    "anonymous": 6,
+    "uniqueIps": 30
+  },
+  "channels": {
+    "totalChannels": 5,
+    "channels": [ "..." ]
+  },
+  "server": {
+    "uptime": 86400.5,
+    "memoryMB": 24.5,
+    "timestamp": "2026-03-10T..."
+  }
+}</code></pre>
+      </div>
+    </div>
+
+    <!-- Health -->
+    <div class="endpoint-card" id="api-health">
+      <div class="endpoint-header" onclick="toggleEndpoint(this)">
+        <span class="method-badge method-get">GET</span>
+        <span class="endpoint-path">/health</span>
+        <span class="endpoint-desc">Health check (no auth)</span>
+        <span class="endpoint-chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <p>No authentication required. Ideal for uptime monitors.</p>
+        <pre><div class="code-header"><span class="lang-label">json</span></div><code>{ "status": "ok", "uptime": 3600.5, "connections": 12, "timestamp": "..." }</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- ── Laravel ──────────────────────────── -->
+  <section id="laravel">
+    <h2>Laravel Integration</h2>
+
+    <h3>Setup</h3>
+    <p>Add to your Laravel <code>.env</code>:</p>
+
+    <pre><div class="code-header"><span class="lang-label">dotenv</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>WEBSOCKET_API_URL=http://localhost:6001
+WEBSOCKET_APP_KEY=digisaka-ws-key-2026
+WEBSOCKET_APP_SECRET=digisaka-ws-secret-change-me-in-production</code></pre>
+
+    <p>These are read from <code>config/services.php</code>:</p>
+    <pre><div class="code-header"><span class="lang-label">php</span></div><code>'websocket' => [
+    'url'    => env('WEBSOCKET_API_URL', 'http://localhost:6001'),
+    'key'    => env('WEBSOCKET_APP_KEY', 'digisaka-ws-key-2026'),
+    'secret' => env('WEBSOCKET_APP_SECRET', 'digisaka-ws-secret-change-me-in-production'),
+],</code></pre>
+
+    <h3>Usage — <code>WebSocketService</code></h3>
+
+    <pre><div class="code-header"><span class="lang-label">php</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>use App\Services\WebSocketService;</code></pre>
+
+    <h4>Trigger events on channels</h4>
+    <pre><div class="code-header"><span class="lang-label">php</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>// Single channel
+WebSocketService::trigger('alerts', 'new-alert', [
+    'farm_id' => 5,
+    'type' => 'drought',
+    'message' => 'Low moisture detected',
+]);
+
+// Multiple channels
+WebSocketService::trigger(
+    ['alerts', 'private-user.12', 'private-user.34'],
+    'task-assigned',
+    ['task_id' => 99, 'title' => 'Inspect Farm 7']
+);
+
+// Exclude sender (prevent echo)
+WebSocketService::trigger('chat.room.1', 'new-message', $data, $request->socket_id);</code></pre>
+
+    <h4>Send directly to users</h4>
+    <pre><div class="code-header"><span class="lang-label">php</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>WebSocketService::toUsers([5, 12], 'notification', [
+    'title' => 'Approval needed',
+    'body' => 'Demo trial #42 is waiting for your approval.',
+    'url' => '/approval/42',
+]);</code></pre>
+
+    <h4>Authorize channels</h4>
+    <pre><div class="code-header"><span class="lang-label">php</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>$auth = WebSocketService::authorizeChannel(
+    $request->socket_id,
+    $request->channel_name,
+    $channelData // for presence channels
+);
+return response()->json($auth);</code></pre>
+
+    <h4>Get stats</h4>
+    <pre><div class="code-header"><span class="lang-label">php</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>$stats = WebSocketService::stats();
+$channels = WebSocketService::channels();</code></pre>
+
+    <h3>Real-World Examples</h3>
+
+    <h4>In a Controller</h4>
+    <pre><div class="code-header"><span class="lang-label">php</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>public function storeAlert(Request $request)
+{
+    $alert = Alert::create($request->validated());
+
+    WebSocketService::trigger('alerts', 'new-alert', [
+        'id'       => $alert->id,
+        'type'     => $alert->alert_type,
+        'message'  => $alert->alert_message,
+        'severity' => $alert->severity,
+    ]);
+
+    return response()->json(['success' => true, 'data' => $alert]);
+}</code></pre>
+
+    <h4>In a Queued Job</h4>
+    <pre><div class="code-header"><span class="lang-label">php</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>class NotifyApprovers implements ShouldQueue
+{
+    public function handle()
+    {
+        $approverIds = User::role('approver')->pluck('id')->toArray();
+
+        WebSocketService::toUsers($approverIds, 'pending-approval', [
+            'count' => DemoTrial::where('status', 'pending')->count(),
+        ]);
+    }
+}</code></pre>
+
+    <h4>In an Observer</h4>
+    <pre><div class="code-header"><span class="lang-label">php</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>class DemoTrialObserver
+{
+    public function updated(DemoTrial $trial)
+    {
+        if ($trial->isDirty('status')) {
+            WebSocketService::trigger(
+                "private-user.{$trial->user_id}",
+                'trial-status-changed',
+                [
+                    'trial_id'   => $trial->id,
+                    'old_status' => $trial->getOriginal('status'),
+                    'new_status' => $trial->status,
+                ]
+            );
+        }
+    }
+}</code></pre>
+  </section>
+
+  <hr>
+
+  <!-- ── Vue ──────────────────────────────── -->
+  <section id="vue">
+    <h2>Vue 3 Client (Admin Panel)</h2>
+
+    <h3>Import</h3>
+    <pre><div class="code-header"><span class="lang-label">js</span></div><code>import ws from '@/utilities/websocket'</code></pre>
+
+    <h3>Connect</h3>
+    <pre><div class="code-header"><span class="lang-label">js</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>ws.initWebSocket({
+  url: 'wss://websocket.digisaka.app',
+  userId: currentUser.id,
+})</code></pre>
+
+    <h3>Subscribe &amp; Listen</h3>
+    <pre><div class="code-header"><span class="lang-label">js</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>// Chainable .on() API
+ws.subscribe('alerts')
+  .on('new-alert', (data) => {
+    showNotification(data.message)
+  })
+  .on('alert-resolved', (data) => {
+    removeAlert(data.id)
+  })
+
+// Wildcard — all events on a channel
+ws.subscribe('updates')
+  .on('*', (data, eventName, channel) => {
+    console.log(`[${channel}] ${eventName}:`, data)
+  })</code></pre>
+
+    <h3>Send Messages</h3>
+    <pre><div class="code-header"><span class="lang-label">js</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>ws.sendToChannel('chat.room.1', { text: 'Hello!' })
+ws.sendPrivateMessage(['5', '12'], { text: 'Check Farm 7' })</code></pre>
+
+    <h3>Global Listeners</h3>
+    <pre><div class="code-header"><span class="lang-label">js</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>ws.on('notification', (data) => showToast(data.title))
+ws.on('*', (data, eventName) => console.log(eventName, data))
+ws.off('notification', myHandler)</code></pre>
+
+    <h3>Reactive State</h3>
+    <pre><div class="code-header"><span class="lang-label">js</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>const isOnline = computed(() => ws.state.isConnected)
+const socketId = computed(() => ws.state.socketId)
+const messages = computed(() => ws.state.messages)</code></pre>
+
+    <h3>Disconnect</h3>
+    <pre><div class="code-header"><span class="lang-label">js</span></div><code>ws.disconnect()</code></pre>
+  </section>
+
+  <hr>
+
+  <!-- ── Flutter ──────────────────────────── -->
+  <section id="flutter">
+    <h2>Flutter Client (Mobile App)</h2>
+
+    <h3>Import &amp; Connect</h3>
+    <pre><div class="code-header"><span class="lang-label">dart</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>import 'package:digisaka/core/services/websocket_service.dart';
+
+final ws = WebSocketService();
+ws.connect(userId: currentUser.id);</code></pre>
+
+    <h3>Subscribe &amp; Listen</h3>
+    <pre><div class="code-header"><span class="lang-label">dart</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>// Chainable .on() API  (returns ChannelBinding)
+ws.subscribe('alerts')
+  .on('new-alert', (data) {
+    print('Alert: $data');
+  })
+  .on('alert-resolved', (data) {
+    print('Resolved: ${data['id']}');
+  });
+
+// Wildcard
+ws.subscribe('updates')
+  .on('*', (data) => print('Update: $data'));</code></pre>
+
+    <h3>Send Messages</h3>
+    <pre><div class="code-header"><span class="lang-label">dart</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>ws.sendMessage('chat.room.1', {'text': 'Hello!'});
+ws.sendPrivateMessage([5, 12], {'text': 'Check Farm 7'});
+ws.sendClientEvent('presence-chat.1', 'typing', {'user': 'Juan'});</code></pre>
+
+    <h3>Streams (Reactive)</h3>
+    <pre><div class="code-header"><span class="lang-label">dart</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>// All raw messages
+ws.stream.listen((msg) {
+  print('${msg['event']} on ${msg['channel']}');
+});
+
+// Connection state
+ws.connectionStream.listen((connected) {
+  print('Connected: $connected');
+});</code></pre>
+
+    <h3>Lifecycle</h3>
+    <div class="callout callout-info">
+      <div class="callout-title">ℹ Automatic lifecycle</div>
+      <p><strong>Disconnects</strong> when app goes to background. <strong>Reconnects</strong> on resume.</p>
+      <p><strong>Resubscribes</strong> to all channels after reconnecting.</p>
+      <p>Uses <strong>exponential backoff</strong>: 1s → 2s → 4s → ... → 30s max.</p>
+    </div>
+
+    <h3>Cleanup</h3>
+    <pre><div class="code-header"><span class="lang-label">dart</span></div><code>ws.disconnect(); // stops auto-reconnect
+ws.dispose();    // full cleanup (on logout)</code></pre>
+  </section>
+
+  <hr>
+
+  <!-- ── Raw WebSocket ────────────────────── -->
+  <section id="raw-ws">
+    <h2>Raw WebSocket Usage</h2>
+    <p>Connect from any language via the standard WebSocket protocol.</p>
+
+    <div class="tabs" data-tab-group="raw">
+      <div class="tab active" onclick="switchTab(this, 'raw-js')">JavaScript</div>
+      <div class="tab" onclick="switchTab(this, 'raw-python')">Python</div>
+      <div class="tab" onclick="switchTab(this, 'raw-curl')">cURL</div>
+    </div>
+
+    <div id="raw-js" class="tab-panel active">
+      <pre><div class="code-header"><span class="lang-label">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>const ws = new WebSocket('wss://websocket.digisaka.app');
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+
+  if (msg.event === 'connection_established') {
+    const data = JSON.parse(msg.data);
+    console.log('Socket ID:', data.socket_id);
+
+    // Identify
+    ws.send(JSON.stringify({ event: 'identify', user_id: '42' }));
+
+    // Subscribe
+    ws.send(JSON.stringify({ event: 'subscribe', channel: 'alerts' }));
+  }
+
+  if (msg.event === 'new-alert') {
+    console.log('Alert:', JSON.parse(msg.data));
+  }
+};</code></pre>
+    </div>
+
+    <div id="raw-python" class="tab-panel">
+      <pre><div class="code-header"><span class="lang-label">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>import json, asyncio, websockets
+
+async def main():
+    async with websockets.connect('wss://websocket.digisaka.app') as ws:
+        msg = json.loads(await ws.recv())
+        socket_id = json.loads(msg['data'])['socket_id']
+        print(f'Connected: {socket_id}')
+
+        await ws.send(json.dumps({'event': 'identify', 'user_id': '42'}))
+        await ws.recv()
+
+        await ws.send(json.dumps({'event': 'subscribe', 'channel': 'alerts'}))
+        await ws.recv()
+
+        async for message in ws:
+            data = json.loads(message)
+            print(f"Event: {data['event']}")
+
+asyncio.run(main())</code></pre>
+    </div>
+
+    <div id="raw-curl" class="tab-panel">
+      <pre><div class="code-header"><span class="lang-label">bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>curl -X POST https://websocket.digisaka.app/api/trigger \
+  -H "Content-Type: application/json" \
+  -H "X-App-Key: your-app-key" \
+  -H "X-App-Signature: your-app-secret" \
+  -d '{"channel":"alerts","event":"test","data":{"msg":"hello"}}'</code></pre>
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- ── Security ─────────────────────────── -->
+  <section id="security">
+    <h2>Security</h2>
+
+    <h3>Best Practices</h3>
+    <ul class="checklist">
+      <li>Change <code>APP_SECRET</code> from the default before deploying (use 64+ random chars)</li>
+      <li>Set <code>ALLOWED_ORIGINS</code> to actual domains, not <code>*</code></li>
+      <li>Use TLS — terminate at nginx/Cloudflare or set SSL_CERT_PATH</li>
+      <li>Rate limiting is enforced per-connection (default: 60 msg/min)</li>
+      <li>IP limits prevent single-IP abuse (default: 50 connections/IP)</li>
+      <li>Never expose <code>APP_SECRET</code> in client-side code</li>
+      <li>Channel auth should always go through your Laravel backend</li>
+    </ul>
+
+    <div class="callout callout-danger">
+      <div class="callout-title">⚠ Important</div>
+      <p>Private and presence channel auth tokens must be generated <strong>server-side</strong>. The Flutter/Vue client should request auth from your Laravel API, which calls <code>WebSocketService::authorizeChannel()</code>.</p>
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- ── Deployment ───────────────────────── -->
+  <section id="deployment">
+    <h2>Production Deployment</h2>
+
+    <div class="tabs" data-tab-group="deploy">
+      <div class="tab active" onclick="switchTab(this, 'deploy-pm2')">PM2</div>
+      <div class="tab" onclick="switchTab(this, 'deploy-systemd')">systemd</div>
+      <div class="tab" onclick="switchTab(this, 'deploy-nginx')">Nginx</div>
+    </div>
+
+    <div id="deploy-pm2" class="tab-panel active">
+      <pre><div class="code-header"><span class="lang-label">bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>npm install -g pm2
+
+# Start
+pm2 start server.js --name digisaka-ws
+
+# Auto-restart on reboot
+pm2 save
+pm2 startup
+
+# View logs
+pm2 logs digisaka-ws
+
+# Monitor
+pm2 monit</code></pre>
+    </div>
+
+    <div id="deploy-systemd" class="tab-panel">
+      <pre><div class="code-header"><span class="lang-label">ini</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code># /etc/systemd/system/digisaka-ws.service
+[Unit]
+Description=Digisaka WebSocket Server
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/websocket
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+
+      <pre><div class="code-header"><span class="lang-label">bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>sudo systemctl enable digisaka-ws
+sudo systemctl start digisaka-ws</code></pre>
+    </div>
+
+    <div id="deploy-nginx" class="tab-panel">
+      <pre><div class="code-header"><span class="lang-label">nginx</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>upstream websocket {
+    server 127.0.0.1:6001;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name websocket.digisaka.app;
+
+    ssl_certificate     /etc/letsencrypt/live/websocket.digisaka.app/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/websocket.digisaka.app/privkey.pem;
+
+    location / {
+        proxy_pass http://websocket;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+    }
+}</code></pre>
+    </div>
+
+    <h3>Production Checklist</h3>
+    <ul class="checklist">
+      <li><code>APP_SECRET</code> — strong random value (64+ chars)</li>
+      <li><code>APP_KEY</code> — unique key per environment</li>
+      <li><code>ALLOWED_ORIGINS</code> — actual domains only</li>
+      <li><code>LOG_LEVEL</code> — set to <code>info</code> or <code>warn</code></li>
+      <li>SSL handled by reverse proxy or configured in .env</li>
+      <li>Process manager (PM2/systemd) with auto-restart</li>
+    </ul>
+  </section>
+
+  <hr>
+
+  <!-- ── Monitoring ───────────────────────── -->
+  <section id="monitoring">
+    <h2>Monitoring &amp; Debugging</h2>
+
+    <h3>Dashboard</h3>
+    <p>Open <a href="/">http://localhost:6001/</a> for a real-time dashboard with live stats, channel management, and a REST API trigger panel.</p>
+
+    <h3>Log Levels</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Level</th><th>Output</th></tr></thead>
+        <tbody>
+          <tr><td><code>debug</code></td><td>Everything — message details, heartbeats, subscriptions</td></tr>
+          <tr><td><code>info</code></td><td>Connections, disconnections, subscriptions, API triggers</td></tr>
+          <tr><td><code>warn</code></td><td>Auth failures, rate limits, rejected connections</td></tr>
+          <tr><td><code>error</code></td><td>Uncaught exceptions, socket errors</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Logs are structured JSON:</p>
+    <pre><div class="code-header"><span class="lang-label">json</span></div><code>{"timestamp":"2026-03-10T12:00:00.000Z","level":"INFO","message":"Client connected","socketId":"123456.7890123"}</code></pre>
+
+    <h3>From Laravel</h3>
+    <pre><div class="code-header"><span class="lang-label">php</span></div><code>$stats = WebSocketService::stats();
+$channels = WebSocketService::channels();</code></pre>
+  </section>
+
+  <hr>
+
+  <!-- ── Project Structure ────────────────── -->
+  <section id="structure">
+    <h2>Project Structure</h2>
+
+    <pre><div class="code-header"><span class="lang-label">text</span></div><code>websocket/
+├── server.js                  Main entry point
+├── package.json               Dependencies &amp; scripts
+├── .env                       Local config (git-ignored)
+├── .env.example               Config template
+├── public/
+│   ├── index.html             Dashboard test page
+│   └── documentation.html     This documentation page
+└── src/
+    ├── config.js              Environment configuration
+    ├── logger.js              Structured JSON logger
+    ├── auth.js                HMAC auth, socket IDs, middleware
+    ├── connection-manager.js  Socket tracking, IP limits, users
+    ├── channel-manager.js     Channel types, broadcasts, presence
+    ├── rate-limiter.js        Sliding-window rate limiter
+    └── api.js                 Express REST routes</code></pre>
+
+    <h3>Module Responsibilities</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Module</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>server.js</code></td><td>Wires everything together. HTTP/WS server, connection lifecycle, message routing, heartbeat, graceful shutdown.</td></tr>
+          <tr><td><code>config.js</code></td><td>Loads <code>.env</code> via dotenv. Typed config object.</td></tr>
+          <tr><td><code>logger.js</code></td><td>debug/info/warn/error. JSON stdout/stderr. Filterable by level.</td></tr>
+          <tr><td><code>auth.js</code></td><td>generateSocketId, generateChannelAuth, verifyChannelAuth, apiAuthMiddleware.</td></tr>
+          <tr><td><code>connection-manager.js</code></td><td>socketId→ws mapping, IP tracking &amp; limits, user identification, multi-device lookup.</td></tr>
+          <tr><td><code>channel-manager.js</code></td><td>channel→subscribers, auth gating for private/presence, member tracking, broadcast &amp; user-targeted sends.</td></tr>
+          <tr><td><code>rate-limiter.js</code></td><td>Sliding window per connection. consume() → {allowed, remaining, retryAfterMs}.</td></tr>
+          <tr><td><code>api.js</code></td><td>Express Router with health, trigger, broadcast, auth, channels, stats endpoints.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div style="margin-top: 56px; padding: 20px 0; border-top: 1px solid var(--border); color: var(--text-dim); font-size: 12px; text-align: center;">
+    Digisaka WebSocket Server v2.0 — Built for <a href="https://digisaka.online">Digisaka</a> by Leads Agri Product Corporation
+  </div>
+</main>
+
+<!-- ═══════════ BACK TO TOP ═══════════ -->
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0})" aria-label="Back to top">↑</button>
+
+<script>
+// ─── Sidebar toggle (mobile) ─────────────
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.querySelector('.sidebar-overlay').classList.toggle('open');
+}
+
+// Close sidebar on link click (mobile)
+document.querySelectorAll('.nav-link').forEach(link => {
+  link.addEventListener('click', () => {
+    document.getElementById('sidebar').classList.remove('open');
+    document.querySelector('.sidebar-overlay').classList.remove('open');
+  });
+});
+
+// ─── Active nav tracking ─────────────────
+const sections = document.querySelectorAll('section[id], div[id]');
+const navLinks = document.querySelectorAll('.nav-link');
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      navLinks.forEach(link => {
+        link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+      });
+    }
+  });
+}, { rootMargin: '-80px 0px -70% 0px', threshold: 0 });
+
+sections.forEach(s => observer.observe(s));
+
+// ─── Sidebar search / filter ─────────────
+function filterNav(query) {
+  const q = query.toLowerCase().trim();
+  document.querySelectorAll('.nav-group').forEach(group => {
+    const links = group.querySelectorAll('.nav-link');
+    let anyVisible = false;
+    links.forEach(link => {
+      const match = !q || link.textContent.toLowerCase().includes(q);
+      link.style.display = match ? '' : 'none';
+      if (match) anyVisible = true;
+    });
+    group.style.display = anyVisible ? '' : 'none';
+  });
+}
+
+// ─── Copy code ───────────────────────────
+function copyCode(btn) {
+  const code = btn.closest('pre').querySelector('code');
+  navigator.clipboard.writeText(code.textContent).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Copy';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+// ─── Endpoint toggle ────────────────────
+function toggleEndpoint(header) {
+  header.closest('.endpoint-card').classList.toggle('open');
+}
+
+// ─── Tabs ────────────────────────────────
+function switchTab(tab, panelId) {
+  const group = tab.closest('.tabs') || tab.parentElement;
+  // Deactivate sibling tabs
+  group.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+
+  // Find all panels that are siblings of this tab group
+  let el = group.nextElementSibling;
+  while (el && el.classList.contains('tab-panel')) {
+    el.classList.remove('active');
+    if (el.id === panelId) el.classList.add('active');
+    el = el.nextElementSibling;
+  }
+}
+
+// ─── Back-to-top visibility ──────────────
+const backBtn = document.getElementById('backToTop');
+window.addEventListener('scroll', () => {
+  backBtn.classList.toggle('visible', window.scrollY > 400);
+}, { passive: true });
+
+// ─── Keyboard shortcut for search ────────
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    document.getElementById('sidebarSearch').focus();
+  }
+});
+</script>
+
+</body>
+</html>

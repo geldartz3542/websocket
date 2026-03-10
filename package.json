@@ -1,12 +1,23 @@
 {
+  "name": "digisaka-websocket-server",
+  "version": "2.0.0",
+  "description": "Digisaka production WebSocket server — Pusher-compatible protocol",
   "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
   "dependencies": {
+    "dotenv": "^16.4.7",
     "express": "^4.19.2",
-    "systeminformation": "^5.22.8",
     "ws": "^8.17.0"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8",
     "utf-8-validate": "^6.0.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
