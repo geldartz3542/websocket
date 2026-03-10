@@ -39,6 +39,9 @@ const config = {
   // SSL
   sslCertPath: process.env.SSL_CERT_PATH || null,
   sslKeyPath: process.env.SSL_KEY_PATH || null,
+
+  // Webhook — called when an identified user's last connection closes
+  disconnectWebhookUrl: process.env.DISCONNECT_WEBHOOK_URL || '',
 };
 
 export default config;

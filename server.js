@@ -439,10 +439,16 @@ wss.on('connection', (ws, req) => {
 
   // ── Disconnect ──────────────────────────────────────
   ws.on('close', (code, reason) => {
+    const userId = ws.userId;
     channelManager.removeFromAll(ws);
     connectionManager.remove(ws);
     rateLimiter.remove(socketId);
-    logger.info('Client disconnected', { socketId, userId: ws.userId, code });
+    logger.info('Client disconnected', { socketId, userId, code });
+
+    // If user was identified and has no remaining connections, notify Laravel
+    if (userId && connectionManager.getAllByUserId(userId).length === 0) {
+      notifyUserOffline(userId);
+    }
   });
 
   ws.on('error', (err) => {
@@ -481,6 +487,35 @@ wss.on('close', () => {
 function send(ws, payload) {
   if (ws.readyState === 1) { // WebSocket.OPEN
     ws.send(JSON.stringify(payload));
+  }
+}
+
+/**
+ * Notify Laravel that an identified user has gone offline (all connections closed).
+ * Fires and forgets — errors are logged but don't affect the WS server.
+ */
+async function notifyUserOffline(userId) {
+  const url = config.disconnectWebhookUrl;
+  if (!url) return;
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-App-Key': config.appKey,
+        'X-App-Signature': config.appSecret,
+      },
+      body: JSON.stringify({ user_id: String(userId) }),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (res.ok) {
+      logger.info('User offline webhook sent', { userId });
+    } else {
+      logger.warn('User offline webhook failed', { userId, status: res.status });
+    }
+  } catch (err) {
+    logger.error('User offline webhook error', { userId, error: err.message });
   }
 }
 
