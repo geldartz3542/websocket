@@ -870,14 +870,14 @@ npm start
 npm run dev</code></pre>
 
     <h3>Verify</h3>
-    <pre><div class="code-header"><span class="lang-label">bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>curl http://localhost:6001/health
+    <pre><div class="code-header"><span class="lang-label">bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>curl https://websocket.digisaka.app/health
 
 # Response:
 # { "status": "ok", "uptime": 12.34, "connections": 0, "timestamp": "..." }</code></pre>
 
     <div class="callout callout-success">
       <div class="callout-title">✓ Tip</div>
-      <p>Open <a href="/">http://localhost:6001/</a> for a visual test dashboard with live connection stats.</p>
+      <p>Open <a href="/">https://websocket.digisaka.app/</a> for a visual test dashboard with live connection stats.</p>
     </div>
   </section>
 
@@ -1137,7 +1137,7 @@ X-App-Signature: &lt;your APP_SECRET&gt;</code></pre>
         <p>* Either <code>channel</code> or <code>channels</code> is required.</p>
 
         <h4>Example</h4>
-        <pre><div class="code-header"><span class="lang-label">bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>curl -X POST http://localhost:6001/api/trigger \
+        <pre><div class="code-header"><span class="lang-label">bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>curl -X POST https://websocket.digisaka.app/api/trigger \
   -H "Content-Type: application/json" \
   -H "X-App-Key: digisaka-ws-key-2026" \
   -H "X-App-Signature: digisaka-ws-secret-change-me-in-production" \
@@ -1176,7 +1176,7 @@ X-App-Signature: &lt;your APP_SECRET&gt;</code></pre>
         </div>
 
         <h4>Example</h4>
-        <pre><div class="code-header"><span class="lang-label">bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>curl -X POST http://localhost:6001/api/broadcast \
+        <pre><div class="code-header"><span class="lang-label">bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>curl -X POST https://websocket.digisaka.app/api/broadcast \
   -H "Content-Type: application/json" \
   -H "X-App-Key: digisaka-ws-key-2026" \
   -H "X-App-Signature: digisaka-ws-secret-change-me-in-production" \
@@ -1215,7 +1215,7 @@ X-App-Signature: &lt;your APP_SECRET&gt;</code></pre>
         </div>
 
         <h4>Example</h4>
-        <pre><div class="code-header"><span class="lang-label">bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>curl -X POST http://localhost:6001/api/auth \
+        <pre><div class="code-header"><span class="lang-label">bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>curl -X POST https://websocket.digisaka.app/api/auth \
   -H "Content-Type: application/json" \
   -H "X-App-Key: digisaka-ws-key-2026" \
   -H "X-App-Signature: digisaka-ws-secret-change-me-in-production" \
@@ -1312,13 +1312,13 @@ X-App-Signature: &lt;your APP_SECRET&gt;</code></pre>
     <h3>Setup</h3>
     <p>Add to your Laravel <code>.env</code>:</p>
 
-    <pre><div class="code-header"><span class="lang-label">dotenv</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>WEBSOCKET_API_URL=http://localhost:6001
+    <pre><div class="code-header"><span class="lang-label">dotenv</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code>WEBSOCKET_API_URL=https://websocket.digisaka.app
 WEBSOCKET_APP_KEY=digisaka-ws-key-2026
 WEBSOCKET_APP_SECRET=digisaka-ws-secret-change-me-in-production</code></pre>
 
     <p>These are read from <code>config/services.php</code>:</p>
     <pre><div class="code-header"><span class="lang-label">php</span></div><code>'websocket' => [
-    'url'    => env('WEBSOCKET_API_URL', 'http://localhost:6001'),
+    'url'    => env('WEBSOCKET_API_URL', 'https://websocket.digisaka.app'),
     'key'    => env('WEBSOCKET_APP_KEY', 'digisaka-ws-key-2026'),
     'secret' => env('WEBSOCKET_APP_SECRET', 'digisaka-ws-secret-change-me-in-production'),
 ],</code></pre>
@@ -1704,7 +1704,7 @@ server {
     <h2>Monitoring &amp; Debugging</h2>
 
     <h3>Dashboard</h3>
-    <p>Open <a href="/">http://localhost:6001/</a> for a real-time dashboard with live stats, channel management, and a REST API trigger panel.</p>
+    <p>Open <a href="/">https://websocket.digisaka.app/</a> for a real-time dashboard with live stats, channel management, and a REST API trigger panel.</p>
 
     <h3>Log Levels</h3>
     <div class="table-wrap">
