@@ -270,7 +270,7 @@ wss.on('connection', (ws, req) => {
 
   // Send connection_established event (Pusher-compatible)
   send(ws, {
-    event: 'connection_established',
+    event: 'pusher:connection_established',
     data: JSON.stringify({
       socket_id: socketId,
       activity_timeout: Math.floor(config.heartbeatInterval / 1000),
@@ -330,6 +330,7 @@ wss.on('connection', (ws, req) => {
       }
 
       // ── Subscribe to channel ──────────────────────
+      case 'pusher:subscribe':
       case 'subscribe': {
         const ch = channel || data?.channel;
         if (!ch) {
@@ -349,14 +350,14 @@ wss.on('connection', (ws, req) => {
           if (subResult.members) responseData.members = subResult.members;
 
           send(ws, {
-            event: 'subscription_succeeded',
+            event: 'pusher_internal:subscription_succeeded',
             channel: ch,
             data: JSON.stringify(responseData),
           });
           logger.info('Subscribed', { socketId, channel: ch });
         } else {
           send(ws, {
-            event: 'subscription_error',
+            event: 'pusher:error',
             channel: ch,
             data: JSON.stringify({ code: 4401, message: subResult.error }),
           });
@@ -366,6 +367,7 @@ wss.on('connection', (ws, req) => {
       }
 
       // ── Unsubscribe from channel ──────────────────
+      case 'pusher:unsubscribe':
       case 'unsubscribe': {
         const ch = channel || data?.channel;
         if (ch) {
